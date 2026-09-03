@@ -8,7 +8,6 @@ import { makeTextPlane } from './labels.js';
 export const PERIOD = 1200;   // proper length of one repeating scenery tile
 export const COPIES = 5;      // tiles built (centered on 0) — span = 6000
 export const SPAN = PERIOD * COPIES;
-export const TUNNEL_PROPER_LENGTH = 60;
 
 function mulberry32(a) {
   return function () {
@@ -187,7 +186,8 @@ function buildStation(cx) {
     win.rotation.y = Math.PI;
     house.add(win);
   }
-  house.position.set(cx + 58, 1.8, 17);
+  house.position.set(cx + 58, 1.8, -34);
+  house.rotation.y = Math.PI;
   g.add(house);
 
   // Station sign
@@ -203,14 +203,10 @@ function buildStation(cx) {
     g.add(post);
   }
 
-  // Platform observer "Bob" — stands at the tile center, x = cx
+  // Platform observer, standing at the tile center
   const bob = buildPerson(0x2f6db3, 0xd9b38c);
   bob.position.set(cx, 1.8, 5.4);
-  bob.name = 'bob';
   g.add(bob);
-  const bobTag = makeTextPlane('BOB · platform frame', 1.0, { color: '#9fd0ff' });
-  bobTag.position.set(cx, 8.0, 5.4);
-  g.add(bobTag);
 
   // Benches + lamps
   const benchMat = new THREE.MeshStandardMaterial({ color: 0x40506b, roughness: 0.7 });
@@ -220,12 +216,6 @@ function buildStation(cx) {
     bench.castShadow = true;
     g.add(bench);
   }
-
-  // Marker where the platform light-clock will be mounted by main.js
-  const clockMount = new THREE.Object3D();
-  clockMount.position.set(cx - 45, 1.8, 7.5);
-  clockMount.name = 'clockMount';
-  g.add(clockMount);
 
   return g;
 }
@@ -342,60 +332,5 @@ export function buildWorldGroup() {
   }
   world.add(chevrons);
 
-  // Tunnel (ladder-paradox prop) — one per tile so wrapping stays seamless,
-  // hidden until the scenario turns it on. Doors are emissive planes.
-  const tunnels = [];
-  for (const cx of centers) {
-    const t = buildTunnel();
-    t.group.position.x = cx;
-    world.add(t.group);
-    tunnels.push(t);
-  }
-
-  const clockMounts = [];
-  world.traverse((o) => { if (o.name === 'clockMount') clockMounts.push(o); });
-
-  return { group: world, tunnels, clockMounts };
-}
-
-function buildTunnel() {
-  const g = new THREE.Group();
-  g.visible = false;
-  const L = TUNNEL_PROPER_LENGTH;
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x5a5f6e, roughness: 0.9 });
-
-  // Arch: extruded ring segments — cheap version: two walls + curved roof
-  for (const z of [-5.2, 5.2]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(L, 12, 1.4), wallMat);
-    wall.position.set(0, 6, z);
-    wall.castShadow = true;
-    g.add(wall);
-  }
-  const roof = new THREE.Mesh(
-    new THREE.CylinderGeometry(6.2, 6.2, L, 24, 1, true, 0, Math.PI),
-    new THREE.MeshStandardMaterial({ color: 0x5a5f6e, roughness: 0.9, side: THREE.DoubleSide })
-  );
-  roof.rotation.z = Math.PI / 2;
-  roof.rotation.y = Math.PI / 2;
-  roof.position.y = 12;
-  roof.castShadow = true;
-  g.add(roof);
-
-  const doorGeo = new THREE.PlaneGeometry(10.4, 15);
-  const mkDoor = () => new THREE.Mesh(doorGeo, new THREE.MeshBasicMaterial({
-    color: 0xff3355, transparent: true, opacity: 0, side: THREE.DoubleSide,
-  }));
-  const doorFront = mkDoor();
-  doorFront.position.set(L / 2, 7.5, 0);
-  doorFront.rotation.y = Math.PI / 2;
-  const doorRear = mkDoor();
-  doorRear.position.set(-L / 2, 7.5, 0);
-  doorRear.rotation.y = Math.PI / 2;
-  g.add(doorFront, doorRear);
-
-  const label = makeTextPlane(`TUNNEL — proper length ${L} m`, 1.6, { color: '#ffd0d8' });
-  label.position.set(0, 14.5, 6.5);
-  g.add(label);
-
-  return { group: g, doorFront, doorRear };
+  return { group: world };
 }
