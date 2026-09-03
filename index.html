@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Relativity Express — Einstein's Train in 3D</title>
+<meta name="description" content="Interactive 3D special relativity: ride Einstein's train or stand on the platform. Length contraction, time dilation, simultaneity, Doppler, Terrell rotation." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚄</text></svg>" />
+<link rel="stylesheet" href="css/style.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<header id="topbar">
+  <div id="brand">
+    <span class="glyph">🚄</span>
+    <div>
+      <h1>RELATIVITY EXPRESS</h1>
+      <p>Einstein's train, computed live from the Lorentz transform</p>
+    </div>
+  </div>
+  <div id="frameToggle" role="tablist" aria-label="Reference frame">
+    <button id="btnPlatform" class="frame-btn active" role="tab">🏛️ PLATFORM FRAME<span>stand with Bob</span></button>
+    <button id="btnTrain" class="frame-btn" role="tab">🚄 TRAIN FRAME<span>ride with Alice</span></button>
+  </div>
+  <div id="topRight">
+    <button id="btnHelp" class="chip" title="Help (H)">? help</button>
+    <button id="btnPause" class="chip" title="Pause (Space)">⏸ pause</button>
+    <button id="btnSlow" class="chip" title="Slow motion (S)">🐢 ¼×</button>
+  </div>
+</header>
+
+<aside id="controls">
+  <section class="panel">
+    <div class="panel-title">TRAIN SPEED</div>
+    <div id="betaRow">
+      <span id="betaValue">0.700</span><span class="unit">c</span>
+    </div>
+    <input type="range" id="speedSlider" min="0" max="99.9" step="0.1" value="70" aria-label="train speed in percent of c" />
+    <div id="presets">
+      <button data-beta="0.25">¼c</button>
+      <button data-beta="0.5">½c</button>
+      <button data-beta="0.866">0.866c<i>γ=2</i></button>
+      <button data-beta="0.95">0.95c</button>
+      <button data-beta="0.99">0.99c</button>
+      <button data-beta="0.999">0.999c</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">LORENTZ FACTOR</div>
+    <div id="gaugeWrap">
+      <svg id="gauge" viewBox="0 0 120 70">
+        <path d="M 10 62 A 52 52 0 0 1 110 62" fill="none" stroke="#2a3150" stroke-width="9" stroke-linecap="round"/>
+        <path id="gaugeArc" d="M 10 62 A 52 52 0 0 1 110 62" fill="none" stroke="url(#gaugeGrad)" stroke-width="9" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#61d4ff"/><stop offset="0.6" stop-color="#ffc861"/><stop offset="1" stop-color="#ff5d73"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div id="gammaValue">γ = 1.400</div>
+    </div>
+    <dl id="readouts">
+      <div><dt>speed</dt><dd id="roSpeed">—</dd></div>
+      <div><dt>train length <em>(this frame)</em></dt><dd id="roLength">—</dd></div>
+      <div><dt>moving clocks run at</dt><dd id="roDilation">—</dd></div>
+      <div><dt>Doppler dead-ahead</dt><dd id="roDoppler">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">PROPER-TIME CLOCKS <button id="btnResetClocks" class="mini" title="Reset clocks (R)">reset</button></div>
+    <div class="clockrow"><span class="who bob">BOB · platform</span><span class="tval" id="clockBob">0.00 s</span><span class="ticks" id="ticksBob">0 ticks</span></div>
+    <div class="clockrow"><span class="who alice">ALICE · train</span><span class="tval" id="clockAlice">0.00 s</span><span class="ticks" id="ticksAlice">0 ticks</span></div>
+    <p class="fineprint">Each frame sees the <b>other</b> clock tick slow — switch frames and watch the roles swap.</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">THOUGHT EXPERIMENTS</div>
+    <div id="scenarios">
+      <button data-scenario="free" class="scen active">🛤 Free ride</button>
+      <button data-scenario="lightning" class="scen">⚡ Lightning simultaneity</button>
+      <button data-scenario="tunnel" class="scen">🚇 Train-in-tunnel paradox</button>
+      <button data-scenario="clockrace" class="scen">⏱ Light-clock race</button>
+      <button data-scenario="accel" class="scen">🌀 Accelerating train (GR bonus)</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">RELATIVISTIC OPTICS <em>(train view)</em></div>
+    <label class="switch"><input type="checkbox" id="optDoppler" checked /><span></span>Doppler colour shift</label>
+    <label class="switch"><input type="checkbox" id="optAberration" checked /><span></span>Aberration (view crowds forward)</label>
+    <label class="switch"><input type="checkbox" id="optHeadlight" checked /><span></span>Headlight beaming</label>
+    <div class="panel-title" style="margin-top:10px">APPEARANCE <em>(platform view)</em></div>
+    <label class="switch"><input type="checkbox" id="optTerrell" /><span></span>Terrell–Penrose rotation <i>what a camera sees</i></label>
+  </section>
+
+  <section class="panel" id="logPanel">
+    <div class="panel-title">EVENT LOG</div>
+    <div id="eventlog"></div>
+  </section>
+</aside>
+
+<div id="minkowskiPanel">
+  <div id="minkowskiHeader">SPACETIME DIAGRAM <button id="btnMink" class="mini">hide</button></div>
+  <canvas id="minkowski"></canvas>
+</div>
+
+<div id="toast"></div>
+
+<div id="accelCard" class="hidden">
+  <h3>🌀 Equivalence principle (the GR bonus)</h3>
+  <p>The train is now <b>accelerating</b>. Accelerated frames are where special relativity hands over to general relativity: inside, acceleration is indistinguishable from a uniform gravitational field pointing backwards.</p>
+  <p>Clocks at the <b>front</b> of the train run faster than at the <b>rear</b> — exactly like clocks higher in a gravity well:</p>
+  <p class="formula">rate<sub>front</sub> / rate<sub>rear</sub> ≈ 1 + aL/c²</p>
+  <div class="clockrow"><span class="who alice">FRONT clock</span><span class="tval" id="clockFront">0.000 s</span></div>
+  <div class="clockrow"><span class="who bob">REAR clock</span><span class="tval" id="clockRear">0.000 s</span></div>
+  <p class="fineprint" id="accelStatus"></p>
+</div>
+
+<div id="help" class="hidden">
+  <div id="helpCard">
+    <h2>🚄 Relativity Express — field guide</h2>
+    <p class="lede">Everything on screen is computed live from the Lorentz transform — no canned animations. One button swaps which frame is "at rest," and every effect flips with it.</p>
+    <div class="helpcols">
+      <div>
+        <h3>The two frames</h3>
+        <ul>
+          <li><b>Platform frame</b> — Bob at rest. The train is length-contracted; Alice's light clock zigzags and ticks slow.</li>
+          <li><b>Train frame</b> — Alice at rest. Now the <i>world</i> contracts and streams past; Bob's clock is the slow one. Both are right.</li>
+        </ul>
+        <h3>Thought experiments</h3>
+        <ul>
+          <li><b>⚡ Lightning</b> — the 1916 original. Simultaneous strikes in one frame are not simultaneous in the other. Run it in both frames.</li>
+          <li><b>🚇 Tunnel paradox</b> — an 80 m train "fits" a 60 m tunnel… only in the tunnel's frame. The resolution is on the doors.</li>
+          <li><b>⏱ Light-clock race</b> — both clocks freshly zeroed; count ticks until the home clock hits 12.</li>
+          <li><b>🌀 Accelerating train</b> — the general-relativity doorway: acceleration ≡ gravity, front clock outruns the rear.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Relativistic optics (train view)</h3>
+        <ul>
+          <li><b>Doppler</b> — scenery blueshifts ahead, redshifts behind: D = 1/γ(1−β·cosθ).</li>
+          <li><b>Aberration</b> — the view crowds toward your direction of motion.</li>
+          <li><b>Headlight</b> — forward light beams brighter ∝ D².</li>
+          <li><b>Terrell rotation</b> (platform view) — cameras don't photograph contraction; light-travel delays make the train look <i>rotated</i>. Toggle it and orbit around.</li>
+        </ul>
+        <h3>Keys</h3>
+        <ul class="keys">
+          <li><kbd>F</kbd> swap frame</li><li><kbd>1–5</kbd> scenarios</li>
+          <li><kbd>Space</kbd> pause</li><li><kbd>S</kbd> ¼× slow-mo</li>
+          <li><kbd>T</kbd> Terrell</li><li><kbd>D</kbd> Doppler</li>
+          <li><kbd>R</kbd> reset clocks</li><li><kbd>H</kbd> this card</li>
+        </ul>
+        <p class="fineprint">Scene light speed is scaled to 60 m/s so you can watch wavefronts; all ratios are exact. Drag to orbit, scroll to zoom.</p>
+      </div>
+    </div>
+    <button id="btnCloseHelp">ride on →</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
