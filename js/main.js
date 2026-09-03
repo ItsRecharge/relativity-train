@@ -32,7 +32,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.maxPolarAngle = Math.PI * 0.495;
-controls.target.set(0, 9, 0);
+controls.target.set(0, 7.5, 0);
 
 // --- world + train + clock -------------------------------------------------
 buildStaticWorld(scene);
@@ -72,10 +72,10 @@ function resetClocks() {
 
 // --- frame switching -------------------------------------------------------
 const camPresets = {
-  // platform: stand back, watch the roof clock zigzag by
-  platform: { pos: new THREE.Vector3(34, 15, 50), tgt: new THREE.Vector3(0, 9, 0), min: 12, max: 280 },
-  // train: hover beside the roof clock; the world streams past behind it
-  train: { pos: new THREE.Vector3(17, 15.5, 25), tgt: new THREE.Vector3(0, 12, 0), min: 6, max: 120 },
+  // platform: stand back, watch the clock zigzag by inside the glass car
+  platform: { pos: new THREE.Vector3(34, 15, 50), tgt: new THREE.Vector3(0, 7.5, 0), min: 12, max: 280 },
+  // train: hover beside the glass side; the world streams past behind it
+  train: { pos: new THREE.Vector3(21, 16, 31), tgt: new THREE.Vector3(0, 7.5, 0), min: 6, max: 120 },
 };
 let camTween = null;
 
